@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Query, Body } from '@nestjs/common';
+import { supabase } from '../lib/supabase';
 
 @Controller('whatsapp')
 export class WhatsappController {
@@ -31,6 +32,14 @@ export class WhatsappController {
     console.log('Phone Number ID:', phoneNumberId);
 
     console.log('Question:', question);
+
+    const { data: client } = await supabase
+      .from('clients')
+      .select('*')
+      .eq('whatsapp_phone_number_id', phoneNumberId)
+      .single();
+
+    console.log(client);
 
     return 'EVENT_RECEIVED';
   }
