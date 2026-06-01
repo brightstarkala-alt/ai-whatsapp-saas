@@ -22,8 +22,21 @@ export class WhatsappController {
   @Post('webhook')
   receiveMessage(@Body() body: any) {
 
-    console.log(JSON.stringify(body, null, 2));
+@Post('webhook')
+async receiveMessage(@Body() body: any) {
 
+  const phoneNumberId =
+    body.entry[0].changes[0].value.metadata.phone_number_id;
+
+  const question =
+    body.entry[0].changes[0].value.messages[0].text.body;
+
+  console.log('Phone Number ID:', phoneNumberId);
+
+  console.log('Question:', question);
+
+  return 'EVENT_RECEIVED';
+}
     return 'EVENT_RECEIVED';
   }
 }
