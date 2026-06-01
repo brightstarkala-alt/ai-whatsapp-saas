@@ -40,6 +40,7 @@ export class WhatsappController {
       .single();
 
     console.log(client);
+    console.log(client?.qdrant_collection);
 
     return 'EVENT_RECEIVED';
   }
