@@ -10,7 +10,7 @@ export class WhatsappController {
     @Query('hub.challenge') challenge: string,
   ) {
 
-    const VERIFY_TOKEN = 'meetvibe123';
+    const VERIFY_TOKEN = 'whatsappsaas123';
 
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
       return challenge;
