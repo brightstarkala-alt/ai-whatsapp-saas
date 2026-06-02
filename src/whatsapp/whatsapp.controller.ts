@@ -45,20 +45,28 @@ export class WhatsappController {
 
     console.log(client?.qdrant_collection);
 
-    const embedding = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: question,
-    });
+    try {
 
-    const searchResult = await qdrant.search(
-      client.qdrant_collection,
-      {
-        vector: embedding.data[0].embedding,
-        limit: 3,
-      },
-    );
+      const embedding = await openai.embeddings.create({
+        model: 'text-embedding-3-small',
+        input: question,
+      });
 
-    console.log(searchResult);
+      const searchResult = await qdrant.search(
+        client.qdrant_collection,
+        {
+          vector: embedding.data[0].embedding,
+          limit: 3,
+        },
+      );
+
+      console.log(JSON.stringify(searchResult, null, 2));
+
+    } catch (error) {
+
+      console.log(error);
+
+    }
 
     return 'EVENT_RECEIVED';
   }
