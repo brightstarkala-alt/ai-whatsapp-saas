@@ -1,5 +1,7 @@
 import { Controller, Get, Post, Query, Body } from '@nestjs/common';
 import { supabase } from '../lib/supabase';
+import { openai } from '../lib/openai';
+import { qdrant } from '../lib/qdrant';
 
 @Controller('whatsapp')
 export class WhatsappController {
@@ -40,7 +42,23 @@ export class WhatsappController {
       .single();
 
     console.log(client);
+
     console.log(client?.qdrant_collection);
+
+    const embedding = await openai.embeddings.create({
+      model: 'text-embedding-3-small',
+      input: question,
+    });
+
+    const searchResult = await qdrant.search(
+      client.qdrant_collection,
+      {
+        vector: embedding.data[0].embedding,
+        limit: 3,
+      },
+    );
+
+    console.log(searchResult);
 
     return 'EVENT_RECEIVED';
   }
