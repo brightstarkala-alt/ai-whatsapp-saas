@@ -46,12 +46,13 @@ export class WhatsappController {
     console.log(client?.qdrant_collection);
 
     try {
+      console.log(process.env.OPENAI_API_KEY);
 
       const embedding = await openai.embeddings.create({
         model: 'text-embedding-3-small',
         input: question,
       });
-
+console.log('Embedding created');
       const searchResult = await qdrant.search(
         client.qdrant_collection,
         {
