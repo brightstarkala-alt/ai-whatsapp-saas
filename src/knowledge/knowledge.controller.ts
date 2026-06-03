@@ -50,7 +50,35 @@ export class KnowledgeController {
     const text = result.value;
 
     // Chunk text
-    const chunks = text.match(/[\s\S]{1,500}/g) || [];
+
+const paragraphs = text
+  .split('\n')
+  .map((p) => p.trim())
+  .filter((p) => p.length > 30);
+
+const chunks: string[] = [];
+
+let currentChunk = '';
+
+for (const paragraph of paragraphs) {
+
+  if ((currentChunk + paragraph).length < 1000) {
+
+    currentChunk += '\n' + paragraph;
+
+  } else {
+
+    chunks.push(currentChunk);
+
+    currentChunk = paragraph;
+  }
+}
+
+if (currentChunk) {
+  chunks.push(currentChunk);
+}
+
+console.log(chunks);
 
     // Store embeddings
     for (let i = 0; i < chunks.length; i++) {
