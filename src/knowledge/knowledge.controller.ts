@@ -14,6 +14,8 @@ import { openai } from '../lib/openai';
 import { qdrant } from '../lib/qdrant';
 import { supabase } from '../lib/supabase';
 
+import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
+
 @Controller('knowledge')
 export class KnowledgeController {
 
@@ -42,43 +44,25 @@ export class KnowledgeController {
 
     const collectionName = client.qdrant_collection;
 
-    // Extract text
+    // Extract text from DOCX
     const result = await mammoth.extractRawText({
       buffer: file.buffer,
     });
 
     const text = result.value;
 
-    // Chunk text
+    // LangChain smart chunking
 
-const paragraphs = text
-  .split('\n')
-  .map((p) => p.trim())
-  .filter((p) => p.length > 30);
+    const splitter = new RecursiveCharacterTextSplitter({
+      chunkSize: 1000,
+      chunkOverlap: 200,
+    });
 
-const chunks: string[] = [];
+    const chunks = await splitter.splitText(text);
 
-let currentChunk = '';
+    console.log('TOTAL CHUNKS:', chunks.length);
 
-for (const paragraph of paragraphs) {
-
-  if ((currentChunk + paragraph).length < 1000) {
-
-    currentChunk += '\n' + paragraph;
-
-  } else {
-
-    chunks.push(currentChunk);
-
-    currentChunk = paragraph;
-  }
-}
-
-if (currentChunk) {
-  chunks.push(currentChunk);
-}
-
-console.log(chunks);
+    console.log(chunks);
 
     // Store embeddings
     for (let i = 0; i < chunks.length; i++) {
@@ -134,22 +118,30 @@ console.log(chunks);
 
     const collectionName = client.qdrant_collection;
 
-    // Create embedding
+    // Create question embedding
     const embedding = await openai.embeddings.create({
       model: 'text-embedding-3-small',
       input: question,
     });
 
-    // Search correct client collection
+    // Search Qdrant
     const searchResult = await qdrant.search(collectionName, {
       vector: embedding.data[0].embedding,
       limit: 3,
     });
 
+    console.log('SEARCH RESULT:');
+
+    console.log(JSON.stringify(searchResult, null, 2));
+
     // Build context
     const context = searchResult
       .map((item: any) => item.payload?.text)
       .join('\n');
+
+    console.log('CONTEXT:');
+
+    console.log(context);
 
     // Generate AI response
     const completion = await openai.chat.completions.create({
@@ -164,6 +156,8 @@ console.log(chunks);
         {
           role: 'user',
           content: `
+Answer ONLY using the provided context.
+
 Context:
 ${context}
 
@@ -174,10 +168,16 @@ ${question}
       ],
     });
 
+    const answer = completion.choices[0].message.content;
+
+    console.log('AI ANSWER:');
+
+    console.log(answer);
+
     return {
       client: client.business_name,
       question,
-      answer: completion.choices[0].message.content,
+      answer,
     };
   }
 }
