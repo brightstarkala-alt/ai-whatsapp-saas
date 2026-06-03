@@ -33,9 +33,16 @@ export class WhatsappController {
       const question =
         body.entry[0].changes[0].value.messages[0].text.body;
 
+      const from =
+        body.entry[0].changes[0].value.messages[0].from;
+
+      console.log('FROM:', from);
+
       console.log('Phone Number ID:', phoneNumberId);
 
       console.log('Question:', question);
+
+      // FETCH CLIENT
 
       const { data: client } = await supabase
         .from('clients')
@@ -45,22 +52,18 @@ export class WhatsappController {
 
       console.log(client);
 
-      console.log(client?.qdrant_collection);
-
-      // CREATE EMBEDDING
+      // CREATE QUESTION EMBEDDING
 
       const embeddingResponse = await openai.embeddings.create({
         model: 'text-embedding-3-small',
         input: question,
       });
 
-      console.log('Embedding created');
-
       const embedding = embeddingResponse.data[0].embedding;
 
-      console.log('Embedding length:', embedding.length);
+      console.log('Embedding created');
 
-      // QDRANT SEARCH
+      // SEARCH QDRANT
 
       const searchResult = await qdrant.search(
         client.qdrant_collection,
@@ -84,7 +87,7 @@ export class WhatsappController {
 
       console.log(context);
 
-      // OPENAI CHAT RESPONSE
+      // GENERATE AI RESPONSE
 
       const completion = await openai.chat.completions.create({
         model: 'gpt-4.1-mini',
@@ -92,9 +95,11 @@ export class WhatsappController {
           {
             role: 'system',
             content: `
-You are MeetVibe AI assistant.
+${client.system_prompt || 'You are a helpful AI assistant.'}
 
-Answer only using provided context.
+Answer ONLY using the provided context.
+
+If answer is not available in context, politely say you do not have that information.
 
 Context:
 ${context}
@@ -112,6 +117,28 @@ ${context}
       console.log('AI REPLY:');
 
       console.log(aiReply);
+
+      // SEND WHATSAPP MESSAGE
+
+      await fetch(
+        `https://graph.facebook.com/v22.0/${phoneNumberId}/messages`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ${process.env.WHATSAPP_TOKEN}',
+          },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            to: from,
+            text: {
+              body: aiReply,
+            },
+          }),
+        },
+      );
+
+      console.log('WhatsApp reply sent');
 
     } catch (error) {
 
