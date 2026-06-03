@@ -52,7 +52,7 @@ export class WhatsappController {
 
       console.log(client);
 
-      // CREATE QUESTION EMBEDDING
+      // CREATE EMBEDDING
 
       const embeddingResponse = await openai.embeddings.create({
         model: 'text-embedding-3-small',
@@ -87,7 +87,7 @@ export class WhatsappController {
 
       console.log(context);
 
-      // GENERATE AI RESPONSE
+      // AI RESPONSE
 
       const completion = await openai.chat.completions.create({
         model: 'gpt-4.1-mini',
@@ -97,9 +97,10 @@ export class WhatsappController {
             content: `
 ${client.system_prompt || 'You are a helpful AI assistant.'}
 
-Answer ONLY using the provided context.
+Answer ONLY using provided context.
 
-If answer is not available in context, politely say you do not have that information.
+If answer is not available in context,
+say politely that information is unavailable.
 
 Context:
 ${context}
@@ -120,13 +121,13 @@ ${context}
 
       // SEND WHATSAPP MESSAGE
 
-      await fetch(
+      const whatsappResponse = await fetch(
         `https://graph.facebook.com/v22.0/${phoneNumberId}/messages`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: 'Bearer ${process.env.WHATSAPP_TOKEN}',
+            Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
           },
           body: JSON.stringify({
             messaging_product: 'whatsapp',
@@ -138,7 +139,11 @@ ${context}
         },
       );
 
-      console.log('WhatsApp reply sent');
+      const whatsappData = await whatsappResponse.json();
+
+      console.log('WHATSAPP RESPONSE:');
+
+      console.log(JSON.stringify(whatsappData, null, 2));
 
     } catch (error) {
 
