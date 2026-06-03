@@ -74,6 +74,45 @@ export class WhatsappController {
 
       console.log(JSON.stringify(searchResult, null, 2));
 
+      // BUILD CONTEXT
+
+      const context = searchResult
+        .map((item: any) => item.payload?.text)
+        .join('\n');
+
+      console.log('CONTEXT:');
+
+      console.log(context);
+
+      // OPENAI CHAT RESPONSE
+
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4.1-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `
+You are MeetVibe AI assistant.
+
+Answer only using provided context.
+
+Context:
+${context}
+            `,
+          },
+          {
+            role: 'user',
+            content: question,
+          },
+        ],
+      });
+
+      const aiReply = completion.choices[0].message.content;
+
+      console.log('AI REPLY:');
+
+      console.log(aiReply);
+
     } catch (error) {
 
       console.log('ERROR:');
