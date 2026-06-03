@@ -14,7 +14,7 @@ import { openai } from '../lib/openai';
 import { qdrant } from '../lib/qdrant';
 import { supabase } from '../lib/supabase';
 
-import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
+import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 
 @Controller('knowledge')
 export class KnowledgeController {
