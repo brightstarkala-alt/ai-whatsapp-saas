@@ -69,7 +69,7 @@ export class WhatsappController {
         client.qdrant_collection,
         {
           vector: embedding,
-          limit: 3,
+          limit: 5,
         },
       );
 
@@ -92,20 +92,25 @@ export class WhatsappController {
       const completion = await openai.chat.completions.create({
         model: 'gpt-4.1-mini',
         messages: [
-          {
-            role: 'system',
-            content: `
+         {
+  role: 'system',
+  content: `
 ${client.system_prompt || 'You are a helpful AI assistant.'}
 
-Answer ONLY using provided context.
+IMPORTANT RULES:
+- Use only the information provided in the context.
+- If the answer exists in the context, answer directly.
+- If the answer is partially available, answer with the available information.
+- If the answer is not available in the context, reply:
+  "Let me check and get back soon."
+- Do not make up facts.
+- Keep answers clear and user-friendly.
+- Use bullet points when listing items.
 
-If answer is not available in context,
-say politely that information is unavailable.
-
-Context:
+CONTEXT:
 ${context}
-            `,
-          },
+`,
+},
           {
             role: 'user',
             content: question,
