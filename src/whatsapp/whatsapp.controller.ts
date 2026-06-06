@@ -131,9 +131,9 @@ ${context}
         {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-          },
+  'Content-Type': 'application/json',
+  Authorization: `Bearer ${client.whatsapp_access_token}`,
+},
           body: JSON.stringify({
             messaging_product: 'whatsapp',
             to: from,
