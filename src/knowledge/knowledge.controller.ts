@@ -15,6 +15,7 @@ import { qdrant } from '../lib/qdrant';
 import { supabase } from '../lib/supabase';
 
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
+import { v4 as uuidv4 } from 'uuid';
 
 @Controller('knowledge')
 export class KnowledgeController {
@@ -43,6 +44,17 @@ export class KnowledgeController {
     }
 
     const collectionName = client.qdrant_collection;
+    const fileName = `${uuidv4()}-${file.originalname}`;
+
+const { error: uploadError } = await supabase.storage
+  .from('knowledge-files')
+  .upload(fileName, file.buffer, {
+    contentType: file.mimetype,
+  });
+
+if (uploadError) {
+  throw uploadError;
+}
 
     // Extract text from DOCX
     const result = await mammoth.extractRawText({
