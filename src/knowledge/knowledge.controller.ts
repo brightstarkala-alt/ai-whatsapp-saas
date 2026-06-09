@@ -52,7 +52,6 @@ export class KnowledgeController {
     const text = result.value;
 
     // LangChain smart chunking
-
     const splitter = new RecursiveCharacterTextSplitter({
       chunkSize: 1000,
       chunkOverlap: 200,
@@ -61,8 +60,6 @@ export class KnowledgeController {
     const chunks = await splitter.splitText(text);
 
     console.log('TOTAL CHUNKS:', chunks.length);
-
-    console.log(chunks);
 
     // Store embeddings
     for (let i = 0; i < chunks.length; i++) {
@@ -87,6 +84,18 @@ export class KnowledgeController {
         ],
       });
     }
+
+    // Save file metadata in Supabase
+    await supabase
+      .from('knowledge_files')
+      .insert([
+        {
+          client_id: clientId,
+          file_name: file.originalname,
+          file_url: '',
+          qdrant_collection: collectionName,
+        },
+      ]);
 
     return {
       message: 'Embeddings stored successfully',
@@ -130,18 +139,10 @@ export class KnowledgeController {
       limit: 3,
     });
 
-    console.log('SEARCH RESULT:');
-
-    console.log(JSON.stringify(searchResult, null, 2));
-
     // Build context
     const context = searchResult
       .map((item: any) => item.payload?.text)
       .join('\n');
-
-    console.log('CONTEXT:');
-
-    console.log(context);
 
     // Generate AI response
     const completion = await openai.chat.completions.create({
@@ -169,10 +170,6 @@ ${question}
     });
 
     const answer = completion.choices[0].message.content;
-
-    console.log('AI ANSWER:');
-
-    console.log(answer);
 
     return {
       client: client.business_name,
