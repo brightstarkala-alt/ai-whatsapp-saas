@@ -98,19 +98,38 @@ if (uploadError) {
     }
 
     // Save file metadata in Supabase
-   await supabase
-  .from('knowledge_files')
+   const { data: knowledgeFile, error: knowledgeFileError } =
+  await supabase
+    .from('knowledge_files')
+    .insert([
+      {
+        client_id: clientId,
+        file_name: file.originalname,
+        file_url: '',
+        qdrant_collection: collectionName,
+        storage_path: fileName,
+        summary: text.substring(0, 500),
+      },
+    ])
+    .select()
+    .single();
+
+if (knowledgeFileError) {
+  throw knowledgeFileError;
+}
+
+const { error: textError } = await supabase
+  .from('knowledge_file_text')
   .insert([
     {
-      client_id: clientId,
-      file_name: file.originalname,
-      file_url: '',
-      qdrant_collection: collectionName,
-      storage_path: fileName,
+      file_id: knowledgeFile.id,
       extracted_text: text,
-      summary: text.substring(0, 1000),
     },
   ]);
+
+if (textError) {
+  throw textError;
+}
     return {
       message: 'Embeddings stored successfully',
       client: client.business_name,
