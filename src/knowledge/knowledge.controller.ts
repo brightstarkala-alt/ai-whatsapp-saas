@@ -98,17 +98,19 @@ if (uploadError) {
     }
 
     // Save file metadata in Supabase
-    await supabase
-      .from('knowledge_files')
-      .insert([
-        {
-          client_id: clientId,
-          file_name: file.originalname,
-          file_url: '',
-          qdrant_collection: collectionName,
-        },
-      ]);
-
+   await supabase
+  .from('knowledge_files')
+  .insert([
+    {
+      client_id: clientId,
+      file_name: file.originalname,
+      file_url: '',
+      qdrant_collection: collectionName,
+      storage_path: fileName,
+      extracted_text: text,
+      summary: text.substring(0, 1000),
+    },
+  ]);
     return {
       message: 'Embeddings stored successfully',
       client: client.business_name,
