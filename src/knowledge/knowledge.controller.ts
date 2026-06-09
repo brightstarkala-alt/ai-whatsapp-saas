@@ -90,8 +90,10 @@ if (uploadError) {
             id: Date.now() + i,
             vector: embedding.data[0].embedding,
             payload: {
-              text: chunk,
-            },
+  text: chunk,
+  file_name: file.originalname,
+  client_id: clientId,
+}
           },
         ],
       });
@@ -169,27 +171,66 @@ if (textError) {
     // Search Qdrant
     const searchResult = await qdrant.search(collectionName, {
       vector: embedding.data[0].embedding,
-      limit: 3,
+      limit: 50,
     });
 
     // Build context
-    const context = searchResult
-      .map((item: any) => item.payload?.text)
-      .join('\n');
+   const chunkTexts = searchResult.map(
+  (item: any, index: number) =>
+    `Chunk ${index + 1}:\n${item.payload?.text}`,
+);
 
-    // Generate AI response
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4.1-mini',
-      messages: [
-        {
-          role: 'system',
-          content:
-            client.system_prompt ||
-            'You are a helpful AI assistant.',
-        },
-        {
-          role: 'user',
-          content: `
+const rerankResponse = await openai.chat.completions.create({
+  model: 'gpt-4.1-mini',
+  messages: [
+    {
+      role: 'system',
+      content: `
+You are a retrieval reranker.
+
+Return only the numbers of the 10 most relevant chunks.
+
+Example:
+1,4,7,10
+      `,
+    },
+    {
+      role: 'user',
+      content: `
+Question:
+${question}
+
+Chunks:
+${chunkTexts.join('\n\n')}
+      `,
+    },
+  ],
+});
+
+const selectedIndexes =
+  (rerankResponse.choices[0].message.content || '')
+    .split(',')
+    .map((x) => parseInt(x.trim(), 10) - 1)
+    .filter((x) => !isNaN(x));
+
+console.log('RERANK RESULT:', selectedIndexes);
+const context = selectedIndexes
+  .map((i) => searchResult[i]?.payload?.text)
+  .filter(Boolean)
+  .join('\n');
+
+const completion = await openai.chat.completions.create({
+  model: 'gpt-4.1-mini',
+  messages: [
+    {
+      role: 'system',
+      content:
+        client.system_prompt ||
+        'You are a helpful AI assistant.',
+    },
+    {
+      role: 'user',
+      content: `
 Answer ONLY using the provided context.
 
 Context:
@@ -197,12 +238,12 @@ ${context}
 
 Question:
 ${question}
-          `,
-        },
-      ],
-    });
+      `,
+    },
+  ],
+});
 
-    const answer = completion.choices[0].message.content;
+const answer = completion.choices[0].message.content;
 
     return {
       client: client.business_name,
