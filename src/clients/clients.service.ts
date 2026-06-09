@@ -15,20 +15,42 @@ export class ClientsService {
 
     return data;
   }
+
   async create(data: any) {
-    await qdrant.createCollection(data.qdrant_collection, {
-  vectors: {
-    size: 1536,
-    distance: 'Cosine',
-  },
-});
-  const { data: client, error } = await supabase
-    .from('clients')
-    .insert([data])
-    .select();
+    const qdrantCollection = `${data.business_name}_collection`
+      .toLowerCase()
+      .replace(/\s+/g, '_');
 
-  if (error) throw error;
+  try {
+  console.log("Creating Qdrant collection:", qdrantCollection);
 
-  return client;
+  await qdrant.createCollection(qdrantCollection, {
+    vectors: {
+      size: 1536,
+      distance: 'Cosine',
+    },
+  });
+
+  console.log("Qdrant collection created");
+} catch (err) {
+  console.error("QDRANT ERROR:", err);
+  throw err;
 }
+
+    const payload = {
+      ...data,
+      qdrant_collection: qdrantCollection,
+    };
+
+    const { data: client, error } = await supabase
+      .from('clients')
+      .insert([payload])
+      .select();
+
+    if (error) {
+      throw error;
+    }
+
+    return client;
+  }
 }
